@@ -1,26 +1,32 @@
+// mainwindow.h
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QSqlTableModel> // <-- 添加此 #include
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+// 前向声明
+class DatabaseManager;
+namespace Ui { class MainWindow; }
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void setDatabaseManager(DatabaseManager *dbManager);
 
 private slots:
     void on_actionExit_triggered();
+    void on_addProductButton_clicked();
+    // 稍后添加编辑/删除按钮的槽
 
 private:
     Ui::MainWindow *ui;
+    DatabaseManager *m_dbManager;   // 指向数据库管理器的指针
+    QSqlTableModel *m_productModel; // 产品表视图的模型
+
+    void setupProductView(); // 初始化表视图和模型的辅助函数
 };
 #endif // MAINWINDOW_H

@@ -120,3 +120,234 @@ bool DatabaseManager::createTables() {
     qDebug() << "所有表已检查/创建成功。";
     return true;
 }
+
+    // 向数据库添加一个新产品。用新的 ID 更新 product.id。
+bool DatabaseManager::addProduct(Product& product) {
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法添加产品。";
+        return false;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("INSERT INTO Products (name, description, purchasePrice, sellingPrice, categoryId, supplierId, stockQuantity) "
+                  "VALUES (:name, :description, :purchasePrice, :sellingPrice, :categoryId, :supplierId, :stockQuantity)");
+    query.bindValue(":name", product.name);
+    query.bindValue(":description", product.description);
+    query.bindValue(":purchasePrice", product.purchasePrice);
+    query.bindValue(":sellingPrice", product.sellingPrice);
+    query.bindValue(":categoryId", product.categoryId > 0 ? QVariant(product.categoryId) : QVariant()); // 处理可能为 -1 的无类别情况
+    query.bindValue(":supplierId", product.supplierId > 0 ? QVariant(product.supplierId) : QVariant()); // 处理可能为 -1 的无供应商情况
+    query.bindValue(":stockQuantity", product.stockQuantity);
+
+    if (!query.exec()) {
+        qDebug() << "DatabaseManager 错误：addProduct 失败 -" << query.lastError().text();
+        return false;
+    }
+    product.id = query.lastInsertId().toInt(); // 获取新插入产品的 ID [33]
+    qDebug() << "产品添加成功，ID 为：" << product.id;
+    return true;
+}
+
+// 按 ID 检索产品
+Product DatabaseManager::getProductById(int id) const {
+    Product product; // 默认构造的产品 (id = -1)
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法按 ID 获取产品。";
+        return product;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("SELECT id, name, description, purchasePrice, sellingPrice, categoryId, supplierId, stockQuantity FROM Products WHERE id = :id");
+    query.bindValue(":id", id);
+    if (query.exec() && query.next()) {
+        product.id = query.value("id").toInt();
+        product.name = query.value("name").toString();
+        product.description = query.value("description").toString();
+        product.purchasePrice = query.value("purchasePrice").toDouble();
+        product.sellingPrice = query.value("sellingPrice").toDouble();
+        product.categoryId = query.value("categoryId").isNull() ? -1 : query.value("categoryId").toInt();
+        product.supplierId = query.value("supplierId").isNull() ? -1 : query.value("supplierId").toInt();
+        product.stockQuantity = query.value("stockQuantity").toInt();
+    } else if (query.lastError().isValid()) {
+        qDebug() << "DatabaseManager 错误：getProductById 失败 -" << query.lastError().text();
+    }
+    return product;
+}
+
+// 从数据库检索所有产品
+QList<Product> DatabaseManager::getAllProducts() const {
+    QList<Product> products;
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法获取所有产品。";
+        return products; // 返回空列表
+    }
+    QSqlQuery query("SELECT id, name, description, purchasePrice, sellingPrice, categoryId, supplierId, stockQuantity FROM Products", m_db);
+    while (query.next()) {
+        Product product;
+        product.id = query.value("id").toInt();
+        product.name = query.value("name").toString();
+        product.description = query.value("description").toString();
+        product.purchasePrice = query.value("purchasePrice").toDouble();
+        product.sellingPrice = query.value("sellingPrice").toDouble();
+        product.categoryId = query.value("categoryId").isNull() ? -1 : query.value("categoryId").toInt();
+        product.supplierId = query.value("supplierId").isNull() ? -1 : query.value("supplierId").toInt();
+        product.stockQuantity = query.value("stockQuantity").toInt();
+        products.append(product);
+    }
+    if (query.lastError().isValid()) {
+        qDebug() << "DatabaseManager 错误：getAllProducts 失败 -" << query.lastError().text();
+    }
+    return products;
+}
+
+// 更新现有产品的详细信息
+bool DatabaseManager::updateProduct(const Product& product) {
+    if (!m_db.isOpen() || product.id <= 0) { // 确保数据库已打开且产品具有有效 ID
+        qDebug() << "DatabaseManager 错误：数据库未打开或产品 ID 无效，无法更新产品。";
+        return false;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE Products SET name = :name, description = :description, "
+                  "purchasePrice = :purchasePrice, sellingPrice = :sellingPrice, "
+                  "categoryId = :categoryId, supplierId = :supplierId, stockQuantity = :stockQuantity "
+                  "WHERE id = :id");
+    query.bindValue(":name", product.name);
+    query.bindValue(":description", product.description);
+    query.bindValue(":purchasePrice", product.purchasePrice);
+    query.bindValue(":sellingPrice", product.sellingPrice);
+    query.bindValue(":categoryId", product.categoryId > 0 ? QVariant(product.categoryId) : QVariant());
+    query.bindValue(":supplierId", product.supplierId > 0 ? QVariant(product.supplierId) : QVariant());
+    query.bindValue(":stockQuantity", product.stockQuantity);
+    query.bindValue(":id", product.id);
+
+    if (!query.exec()) {
+        qDebug() << "DatabaseManager 错误：updateProduct 失败 -" << query.lastError().text();
+        return false;
+    }
+    qDebug() << "ID 为 " << product.id << " 的产品更新成功。受影响行数：" << query.numRowsAffected();
+    return query.numRowsAffected() > 0; // 检查是否实际更新了任何行
+}
+
+// 按 ID 删除产品
+bool DatabaseManager::deleteProduct(int id) {
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法删除产品。";
+        return false;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("DELETE FROM Products WHERE id = :id");
+    query.bindValue(":id", id);
+    if (!query.exec()) {
+        qDebug() << "DatabaseManager 错误：deleteProduct 失败 -" << query.lastError().text();
+        return false;
+    }
+    qDebug() << "ID 为 " << id << " 的产品删除成功。受影响行数：" << query.numRowsAffected();
+    return query.numRowsAffected() > 0;
+}
+
+// 按 ID 检查产品是否存在
+bool DatabaseManager::productExists(int id) const {
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法检查产品是否存在。";
+        return false;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("SELECT id FROM Products WHERE id = :id");
+    query.bindValue(":id", id);
+    if (query.exec() && query.next()) {
+        return true; // 找到产品
+    }
+    if (query.lastError().isValid()) {
+        qDebug() << "DatabaseManager 错误：productExists 查询失败 -" << query.lastError().text();
+    }
+    return false; // 未找到产品或出错
+}
+      // 添加一个新类别。用新的 ID 更新 category.id。
+bool DatabaseManager::addCategory(Category& category) {
+    if (!m_db.isOpen()) return false;
+    QSqlQuery query(m_db);
+    query.prepare("INSERT INTO Categories (name) VALUES (:name)");
+    query.bindValue(":name", category.name);
+    if (!query.exec()) {
+        qDebug() << "addCategory 错误：" << query.lastError().text();
+        return false;
+    }
+    category.id = query.lastInsertId().toInt();
+    return true;
+}
+
+// 按 ID 检索类别
+Category DatabaseManager::getCategoryById(int id) const {
+    Category category;
+    if (!m_db.isOpen()) return category;
+    QSqlQuery query(m_db);
+    query.prepare("SELECT id, name FROM Categories WHERE id = :id");
+    query.bindValue(":id", id);
+    if (query.exec() && query.next()) {
+        category.id = query.value("id").toInt();
+        category.name = query.value("name").toString();
+    } else if (query.lastError().isValid()) {
+        qDebug() << "getCategoryById 错误：" << query.lastError().text();
+    }
+    return category;
+}
+
+// 按名称检索类别 ID
+int DatabaseManager::getCategoryId(const QString& name) const {
+    if (!m_db.isOpen()) return -1;
+    QSqlQuery query(m_db);
+    query.prepare("SELECT id FROM Categories WHERE name = :name");
+    query.bindValue(":name", name);
+    if (query.exec() && query.next()) {
+        return query.value("id").toInt();
+    } else if (query.lastError().isValid()) {
+        qDebug() << "getCategoryId 错误：" << query.lastError().text();
+    }
+    return -1; // 未找到或出错
+}
+
+
+// 检索所有类别
+QList<Category> DatabaseManager::getAllCategories() const {
+    QList<Category> categories;
+    if (!m_db.isOpen()) return categories;
+    QSqlQuery query("SELECT id, name FROM Categories", m_db);
+    while (query.next()) {
+        Category cat;
+        cat.id = query.value("id").toInt();
+        cat.name = query.value("name").toString();
+        categories.append(cat);
+    }
+    if (query.lastError().isValid()) {
+        qDebug() << "getAllCategories 错误：" << query.lastError().text();
+    }
+    return categories;
+}
+
+// 更新现有类别
+bool DatabaseManager::updateCategory(const Category& category) {
+    if (!m_db.isOpen() || category.id <= 0) return false;
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE Categories SET name = :name WHERE id = :id");
+    query.bindValue(":name", category.name);
+    query.bindValue(":id", category.id);
+    if (!query.exec()) {
+        qDebug() << "updateCategory 错误：" << query.lastError().text();
+        return false;
+    }
+    return query.numRowsAffected() > 0;
+}
+
+// 按 ID 删除类别
+bool DatabaseManager::deleteCategory(int id) {
+    if (!m_db.isOpen()) return false;
+    // 在删除类别之前，请考虑对使用此别的产品的影响。
+    // 当前模式使用 ON DELETE SET NULL，因此 product.categoryId 将变为 NULL。
+    // 另一种方法是，如果产品正在使用该类别，则阻止删除，或重新分配产品。
+    QSqlQuery query(m_db);
+    query.prepare("DELETE FROM Categories WHERE id = :id");
+    query.bindValue(":id", id);
+    if (!query.exec()) {
+        qDebug() << "deleteCategory 错误：" << query.lastError().text();
+        return false;
+    }
+    return query.numRowsAffected() > 0;
+}
