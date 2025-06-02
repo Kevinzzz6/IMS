@@ -18,7 +18,7 @@
     <item row="0" column="1">
      <widget class="QTabWidget" name="mainTabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="productsTab">
        <attribute name="title">
@@ -59,7 +59,7 @@
         <item row="3" column="0">
          <widget class="QPushButton" name="editCategoryButton">
           <property name="text">
-           <string>PushButton</string>
+           <string>编辑所选类别</string>
           </property>
          </widget>
         </item>
@@ -69,14 +69,14 @@
         <item row="4" column="0">
          <widget class="QPushButton" name="deleteCategoryButton">
           <property name="text">
-           <string>PushButton</string>
+           <string>删除所选类别</string>
           </property>
          </widget>
         </item>
         <item row="2" column="0">
          <widget class="QPushButton" name="addCategoryButton">
           <property name="text">
-           <string>PushButton</string>
+           <string>添加类别</string>
           </property>
          </widget>
         </item>
@@ -86,6 +86,42 @@
        <attribute name="title">
         <string>供应商</string>
        </attribute>
+       <widget class="QTableView" name="suppliersTableView">
+        <property name="geometry">
+         <rect>
+          <x>160</x>
+          <y>190</y>
+          <width>256</width>
+          <height>192</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="addSupplierButton">
+        <property name="geometry">
+         <rect>
+          <x>270</x>
+          <y>450</y>
+          <width>80</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>添加供应商</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="editSupplierButton">
+        <property name="geometry">
+         <rect>
+          <x>280</x>
+          <y>500</y>
+          <width>80</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>PushButton</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="reportsTab">
        <attribute name="title">

@@ -4,6 +4,8 @@
 
 #include <QMainWindow>
 #include <QSqlTableModel> // <-- 添加此 #include
+#include <QSqlRelationalTableModel> // 添加
+
 
 // 前向声明
 class DatabaseManager;
@@ -26,13 +28,28 @@ private slots:
 
     void on_deleteProductButton_clicked();
 
+    void on_addCategoryButton_clicked();
+
+    void on_editCategoryButton_clicked();
+
+    void on_deleteCategoryButton_clicked();
+
+    void on_addSupplierButton_clicked();
+
+    void on_editSupplierButton_clicked();
+
+    void on_deleteSupplierButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     DatabaseManager *m_dbManager;   // 指向数据库管理器的指针
     QSqlTableModel *m_productModel; // 产品表视图的模型
     QSqlTableModel *m_categoryModel; // 类别表视图的模型
+    QSqlTableModel *m_supplierModel; // 供应商表视图的模型
+    QSqlRelationalTableModel *m_productRelationalModel; // 重命名或替换 m_productModel
 
     void setupProductView(); // 初始化表视图和模型的辅助函数
     void setupCategoryView();
+    void setupSupplierView();
 };
 #endif // MAINWINDOW_H

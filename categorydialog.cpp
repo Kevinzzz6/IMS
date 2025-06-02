@@ -23,7 +23,7 @@ void CategoryDialog::setCategory(const Category& category)
 Category CategoryDialog::getCategory() const
 {
     Category category;
-    category.id = m_editingCategoryId;
+    category.id = m_editingCategoryId; // 确保 ID 正确
     category.name = ui->categoryNameLineEdit->text().trimmed(); // 获取类别名称
     return category;
 }

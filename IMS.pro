@@ -13,7 +13,8 @@ SOURCES += \
     databasemanager.cpp \
     main.cpp \
     mainwindow.cpp \
-    productdialog.cpp
+    productdialog.cpp \
+    supplierdialog.cpp
 
 HEADERS += \
     category.h \
@@ -22,12 +23,14 @@ HEADERS += \
     mainwindow.h \
     product.h \
     productdialog.h \
-    supplier.h
+    supplier.h \
+    supplierdialog.h
 
 FORMS += \
     categorydialog.ui \
     mainwindow.ui \
-    productdialog.ui
+    productdialog.ui \
+    supplierdialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
