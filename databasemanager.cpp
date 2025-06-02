@@ -351,3 +351,156 @@ bool DatabaseManager::deleteCategory(int id) {
     }
     return query.numRowsAffected() > 0;
 }
+
+QList<Product> DatabaseManager::getLowStockProducts(int threshold) const {
+    QList<Product> products;
+    if (!m_db.isOpen()) {
+        qDebug() << "数据库未打开，无法获取低库存产品";
+        return products;
+    }
+    QSqlQuery query(m_db);
+    // SQL 查询，查找 stockQuantity 小于或等于阈值的产品 [2, 73]
+    query.prepare("SELECT id, name, description, purchasePrice, sellingPrice, categoryId, supplierId, stockQuantity "
+                  "FROM Products WHERE stockQuantity <= :threshold ORDER BY stockQuantity ASC");
+    query.bindValue(":threshold", threshold);
+
+    if (query.exec()) {
+        while (query.next()) {
+            Product product;
+            product.id = query.value("id").toInt();
+            product.name = query.value("name").toString();
+            // ... (像 getAllProducts 方法中那样，确保从查询结果中填充产品对象的其他所有相关字段，
+            // 例如 description, purchasePrice, sellingPrice 等，以确保报表所需的产品信息是完整的) ...
+
+            // 精确获取库存数量，这是生成低库存报表的关键数据。
+            product.stockQuantity = query.value("stockQuantity").toInt();
+
+            // 处理可能为空的 categoryId 外键。
+            // 如果数据库中的 categoryId 为 NULL (表示产品未分配类别),
+            // 则在 Product 对象中将其设置为 -1。这是一种常用的约定，
+            // 用于在应用程序层面表示“无类别”或“未指定”，
+            // 避免了直接使用可能引起混淆的0，并允许后续逻辑明确处理这种情况。
+            product.categoryId = query.value("categoryId").isNull() ? -1 : query.value("categoryId").toInt();
+
+            // 同样地处理可能为空的 supplierId 外键。
+            // 如果 supplierId 在数据库中为 NULL (表示产品无指定供应商),
+            // 则在 Product 对象中将其设置为 -1。这种处理方式确保了
+            // 即使外键数据缺失，产品对象也能被正确构建和使用，
+            // 例如在报表中显示“无供应商”而不是因空值导致错误。
+            product.supplierId = query.value("supplierId").isNull() ? -1 : query.value("supplierId").toInt();
+            products.append(product);
+        }
+        qDebug() << "低库存产品查询成功，数量：" << products.size();
+    } else {
+        qDebug() << "获取低库存产品时出错：" << query.lastError().text();
+    }
+    return products;
+}
+
+// 添加一个新供应商。用新的 ID 更新 supplier.id。
+bool DatabaseManager::addSupplier(Supplier& supplier) {
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法添加供应商。";
+        return false;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("INSERT INTO Suppliers (name, contactDetails) VALUES (:name, :contactDetails)");
+    query.bindValue(":name", supplier.name);
+    query.bindValue(":contactDetails", supplier.contactDetails);
+
+    if (!query.exec()) {
+        qDebug() << "DatabaseManager 错误：addSupplier 失败 -" << query.lastError().text();
+        return false;
+    }
+    supplier.id = query.lastInsertId().toInt();
+    qDebug() << "供应商添加成功，ID 为：" << supplier.id;
+    return true;
+}
+
+Supplier DatabaseManager::getSupplierById(int id) const {
+    Supplier supplier; // 默认构造 (id = -1)
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法按 ID 获取供应商。";
+        return supplier;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("SELECT id, name, contactDetails FROM Suppliers WHERE id = :id");
+    query.bindValue(":id", id);
+    if (query.exec() && query.next()) {
+        supplier.id = query.value("id").toInt();
+        supplier.name = query.value("name").toString();
+        supplier.contactDetails = query.value("contactDetails").toString();
+    } else if (query.lastError().isValid()) {
+        qDebug() << "DatabaseManager 错误：getSupplierById 失败 -" << query.lastError().text();
+    }
+    return supplier;
+}
+
+QList<Supplier> DatabaseManager::getAllSuppliers() const { // ✨ 实现这个关键函数
+    QList<Supplier> suppliers;
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法获取所有供应商。";
+        return suppliers;
+    }
+    QSqlQuery query("SELECT id, name, contactDetails FROM Suppliers ORDER BY name ASC", m_db); // 按名称排序
+    while (query.next()) {
+        Supplier sup;
+        sup.id = query.value("id").toInt();
+        sup.name = query.value("name").toString();
+        sup.contactDetails = query.value("contactDetails").toString();
+        suppliers.append(sup);
+    }
+    if (query.lastError().isValid()) {
+        qDebug() << "DatabaseManager 错误：getAllSuppliers 失败 -" << query.lastError().text();
+    }
+    return suppliers;
+}
+
+bool DatabaseManager::updateSupplier(const Supplier& supplier) {
+    if (!m_db.isOpen() || supplier.id <= 0) {
+        qDebug() << "DatabaseManager 错误：数据库未打开或供应商 ID 无效，无法更新供应商。";
+        return false;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE Suppliers SET name = :name, contactDetails = :contactDetails WHERE id = :id");
+    query.bindValue(":name", supplier.name);
+    query.bindValue(":contactDetails", supplier.contactDetails);
+    query.bindValue(":id", supplier.id);
+
+    if (!query.exec()) {
+        qDebug() << "DatabaseManager 错误：updateSupplier 失败 -" << query.lastError().text();
+        return false;
+    }
+    qDebug() << "ID 为 " << supplier.id << " 的供应商更新成功。受影响行数：" << query.numRowsAffected();
+    return query.numRowsAffected() > 0;
+}
+
+bool DatabaseManager::deleteSupplier(int id) {
+    if (!m_db.isOpen()) {
+        qDebug() << "DatabaseManager 错误：数据库未打开，无法删除供应商。";
+        return false;
+    }
+    QSqlQuery query(m_db);
+    query.prepare("DELETE FROM Suppliers WHERE id = :id");
+    query.bindValue(":id", id);
+    if (!query.exec()) {
+        qDebug() << "DatabaseManager 错误：deleteSupplier 失败 -" << query.lastError().text();
+        return false;
+    }
+    qDebug() << "ID 为 " << id << " 的供应商删除成功。受影响行数：" << query.numRowsAffected();
+    return query.numRowsAffected() > 0;
+}
+
+// getSupplierId (如果之前没有实现，也需要实现)
+int DatabaseManager::getSupplierId(const QString& name) const {
+    if (!m_db.isOpen()) return -1;
+    QSqlQuery query(m_db);
+    query.prepare("SELECT id FROM Suppliers WHERE name = :name");
+    query.bindValue(":name", name);
+    if (query.exec() && query.next()) {
+        return query.value("id").toInt();
+    } else if (query.lastError().isValid()) {
+        qDebug() << "DatabaseManager 错误：getSupplierId 失败 -" << query.lastError().text();
+    }
+    return -1; // 未找到或出错
+}

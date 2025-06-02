@@ -32,6 +32,7 @@ public:
 
     // 数据库对象的 getter，对 QSqlTableModel 很有用
     QSqlDatabase getDatabase() const;
+    QList<Product> getLowStockProducts(int threshold) const;
 
     // 产品 CRUD 操作
     bool addProduct(Product& product); // 通过非 const 引用传递以更新 ID

@@ -15,25 +15,74 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+    <item row="0" column="1">
      <widget class="QTabWidget" name="mainTabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="productsTab">
        <attribute name="title">
         <string>产品</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_2">
+       <layout class="QGridLayout" name="gridLayout_6">
         <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="6" column="1">
+           <widget class="QComboBox" name="productCategoryFilterComboBox"/>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="productSearchLineEdit">
+            <property name="placeholderText">
+             <string>按产品名称模糊搜索...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>搜索产品：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>按类别筛选：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0" colspan="2">
+           <widget class="QPushButton" name="clearProductFilterButton">
+            <property name="text">
+             <string>清除筛选</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="1" column="0">
+         <widget class="QTableView" name="productsTableView"/>
+        </item>
+        <item row="2" column="0">
          <widget class="QPushButton" name="addProductButton">
           <property name="text">
            <string>添加产品</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QTableView" name="productsTableView"/>
+        <item row="3" column="0">
+         <widget class="QPushButton" name="editProductButton">
+          <property name="text">
+           <string>编辑所选产品</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QPushButton" name="deleteProductButton">
+          <property name="text">
+           <string>删除所选产品</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -41,29 +90,94 @@
        <attribute name="title">
         <string>类别</string>
        </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="3" column="0">
+         <widget class="QPushButton" name="editCategoryButton">
+          <property name="text">
+           <string>编辑所选类别</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QTableView" name="categoriesTableView"/>
+        </item>
+        <item row="4" column="0">
+         <widget class="QPushButton" name="deleteCategoryButton">
+          <property name="text">
+           <string>删除所选类别</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="addCategoryButton">
+          <property name="text">
+           <string>添加类别</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="suppliersTab">
        <attribute name="title">
         <string>供应商</string>
        </attribute>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="0">
+         <widget class="QTableView" name="suppliersTableView"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="addSupplierButton">
+          <property name="text">
+           <string>添加供应商</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="editSupplierButton">
+          <property name="text">
+           <string>编辑所选供应商</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QPushButton" name="deleteSupplierButton">
+          <property name="text">
+           <string>删除所选供应商</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="reportsTab">
        <attribute name="title">
         <string>报表</string>
        </attribute>
-       <widget class="QLabel" name="label">
-        <property name="geometry">
-         <rect>
-          <x>270</x>
-          <y>150</y>
-          <width>53</width>
-          <height>15</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="1" column="1">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>低库存阈值：</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QPushButton" name="generateLowStockReportButton">
+          <property name="text">
+           <string>生成低库存报表</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QTableView" name="lowStockTableView"/>
+        </item>
+        <item row="2" column="1">
+         <widget class="QSpinBox" name="lowStockThresholdSpinBox">
+          <property name="value">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>

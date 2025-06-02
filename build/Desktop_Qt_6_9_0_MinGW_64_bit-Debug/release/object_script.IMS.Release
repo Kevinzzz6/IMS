@@ -1,0 +1,10 @@
+release/categorydialog.o
+release/databasemanager.o
+release/main.o
+release/mainwindow.o
+release/productdialog.o
+release/supplierdialog.o
+release/moc_categorydialog.o
+release/moc_mainwindow.o
+release/moc_productdialog.o
+release/moc_supplierdialog.o

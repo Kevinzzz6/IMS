@@ -85,19 +85,30 @@ Product ProductDialog::getProduct() const {
 }
 
 void ProductDialog::loadCategoriesAndSuppliers(DatabaseManager* dbManager) {
-    if (!dbManager) return;
-
-    ui->categoryComboBox->clear();
-    QList<Category> categories = dbManager->getAllCategories();
-    ui->categoryComboBox->addItem(tr("无"), -1); // 无类别的选项
-    for (const Category& cat : categories) {
-        ui->categoryComboBox->addItem(cat.name, cat.id); // 将 ID 存储为项目数据
+    if (!dbManager) {
+        qDebug() << "ProductDialog 错误：传递的 DatabaseManager 为空。";
+        return;
     }
 
-    ui->supplierComboBox->clear();
-    QList<Supplier> suppliers = dbManager->getAllSuppliers();
-    ui->supplierComboBox->addItem(tr("无"), -1); // 无供应商的选项
-    for (const Supplier& sup : suppliers) {
-        ui->supplierComboBox->addItem(sup.name, sup.id); // 将 ID 存储为项目数据
+    // --- 填充类别组合框 ---
+    ui->categoryComboBox->clear(); // 清除旧项目
+    ui->categoryComboBox->addItem(tr("无类别"), QVariant(-1)); // 添加一个“无”或“请选择”的选项，其关联数据为-1
+    QList<Category> categories = dbManager->getAllCategories();
+    if (categories.isEmpty() && !dbManager->getDatabase().isOpen()) { // 额外检查
+        qDebug() << "ProductDialog 警告：无法加载类别，数据库可能未正确打开或类别表为空。";
+    }
+    for (const Category& cat : std::as_const(categories)) {
+        ui->categoryComboBox->addItem(cat.name, QVariant(cat.id)); // 显示名称，存储 ID
+    }
+
+    // --- 填充供应商组合框 ---
+    ui->supplierComboBox->clear(); // 清除旧项目
+    ui->supplierComboBox->addItem(tr("无供应商"), QVariant(-1)); // 添加一个“无”或“请选择”的选项
+    QList<Supplier> suppliers = dbManager->getAllSuppliers(); // ✨ 这里调用了 getAllSuppliers
+    if (suppliers.isEmpty() && !dbManager->getDatabase().isOpen()) { // 额外检查
+        qDebug() << "ProductDialog 警告：无法加载供应商，数据库可能未正确打开或供应商表为空。";
+    }
+    for (const Supplier& sup : std::as_const(suppliers)) {
+        ui->supplierComboBox->addItem(sup.name, QVariant(sup.id)); // 显示名称，存储 ID
     }
 }

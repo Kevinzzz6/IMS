@@ -1,4 +1,6 @@
 #include "mainwindow.h"
+#include <QStandardItemModel> // ✨ 添加这一行
+#include <QStandardItem>    // ✨ 添加这一行
 #include "ui_mainwindow.h"
 #include "databasemanager.h"
 #include "productdialog.h"
@@ -25,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_productRelationalModel(nullptr) // ***** 更新点 ***** 初始化 m_productRelationalModel
     , m_categoryModel(nullptr)          // 初始化 m_categoryModel
     , m_supplierModel(nullptr)          // 初始化 m_supplierModel
+    // , m_lowStockReportModel(nullptr) // 如果作为成员变量初始化
 {
     ui->setupUi(this);
     statusBar()->showMessage(tr("就绪"), 3000);
@@ -526,3 +529,124 @@ void MainWindow::on_deleteSupplierButton_clicked()
         }
     }
 }
+
+
+// ✨ 新增：用于产品筛选框的槽函数和辅助函数 (假设已在 .h 中声明)
+// --- 产品筛选槽函数和辅助函数 ---
+void MainWindow::populateCategoryFilterComboBox() { // ✨ 实现
+    if (!m_dbManager) return;
+    QVariant currentData = ui->productCategoryFilterComboBox->currentData();
+    ui->productCategoryFilterComboBox->clear();
+    ui->productCategoryFilterComboBox->addItem(tr("所有类别"), -1);
+    QList<Category> categories = m_dbManager->getAllCategories();
+    for (const Category& cat : categories) {
+        ui->productCategoryFilterComboBox->addItem(cat.name, cat.id);
+    }
+    int indexToRestore = ui->productCategoryFilterComboBox->findData(currentData);
+    ui->productCategoryFilterComboBox->setCurrentIndex(indexToRestore != -1 ? indexToRestore : 0);
+}
+
+void MainWindow::applyProductFilters() { // ✨ 实现
+    if (!m_productRelationalModel) {
+        qDebug() << "产品关系模型未初始化，无法应用筛选。";
+        return;
+    }
+    QString searchText = ui->productSearchLineEdit->text().trimmed();
+    int categoryId = ui->productCategoryFilterComboBox->currentData().toInt();
+    QStringList filters;
+    if (!searchText.isEmpty()) {
+        filters.append(QString("Products.name LIKE '%%1%'").arg(searchText.replace("'", "''")));
+    }
+    if (categoryId != -1) {
+        filters.append(QString("Products.categoryId = %1").arg(categoryId));
+    }
+    QString combinedFilter = filters.join(" AND ");
+    m_productRelationalModel->setFilter(combinedFilter);
+    if (!m_productRelationalModel->select()) {
+        qDebug() << "应用产品筛选器时出错：" << m_productRelationalModel->lastError().text();
+        QMessageBox::warning(this, "筛选错误", "应用筛选条件时发生错误：" + m_productRelationalModel->lastError().text());
+    } else {
+        qDebug() << "产品筛选器已应用：" << combinedFilter << "；找到 " << m_productRelationalModel->rowCount() << " 行。";
+    }
+    updateProductActionButtons(); // ✨ 更新按钮状态
+}
+
+void MainWindow::on_productSearchLineEdit_textChanged(const QString &text) { // ✨ 实现
+    Q_UNUSED(text);
+    applyProductFilters();
+}
+
+void MainWindow::on_productCategoryFilterComboBox_currentIndexChanged(int index) { // ✨ 实现
+    Q_UNUSED(index);
+    applyProductFilters();
+}
+
+// --- 低库存报表槽函数 ---
+void MainWindow::on_generateLowStockReportButton_clicked() { // ✨ 实现
+    if (!m_dbManager) {
+        QMessageBox::warning(this, "错误", "数据库未初始化。");
+        return;
+    }
+    int threshold = ui->lowStockThresholdSpinBox->value();
+    QList<Product> lowStockProducts = m_dbManager->getLowStockProducts(threshold);
+
+    // 清理旧的报表模型（如果存在）
+    if (ui->lowStockTableView->model()) {
+        delete ui->lowStockTableView->model();
+        ui->lowStockTableView->setModel(nullptr);
+    }
+
+    if (lowStockProducts.isEmpty()) {
+        QMessageBox::information(this, "低库存报表", "没有找到库存低于或等于 " + QString::number(threshold) + " 的产品。");
+        return;
+    }
+
+    QStandardItemModel *reportModel = new QStandardItemModel(lowStockProducts.size(), 4, ui->lowStockTableView); // ✨ 设置父对象
+    reportModel->setHorizontalHeaderLabels({tr("ID"), tr("产品名称"), tr("当前库存"), tr("售价")});
+    for (int row = 0; row < lowStockProducts.size(); ++row) {
+        const Product& product = lowStockProducts.at(row);
+        reportModel->setItem(row, 0, new QStandardItem(QString::number(product.id)));
+        reportModel->setItem(row, 1, new QStandardItem(product.name));
+        reportModel->setItem(row, 2, new QStandardItem(QString::number(product.stockQuantity)));
+        reportModel->setItem(row, 3, new QStandardItem(QString::number(product.sellingPrice)));
+    }
+    ui->lowStockTableView->setModel(reportModel);
+    ui->lowStockTableView->resizeColumnsToContents();
+    ui->lowStockTableView->horizontalHeader()->setStretchLastSection(true);
+    ui->lowStockTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+}
+
+// --- 产品表格选择变化槽函数 ---
+void MainWindow::on_productSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected) // ✨ 实现
+{
+    Q_UNUSED(selected);
+    Q_UNUSED(deselected);
+    updateProductActionButtons();
+}
+
+// --- 更新产品操作按钮状态的辅助函数 ---
+void MainWindow::updateProductActionButtons() // ✨ 实现
+{
+    bool hasSelection = false; // 默认值
+    if (ui->productsTableView && ui->productsTableView->selectionModel()) { // ✨ 增加空指针检查
+        hasSelection = ui->productsTableView->selectionModel()->hasSelection();
+    }
+
+    if (ui->editProductButton) { // ✨ 增加空指针检查
+        ui->editProductButton->setEnabled(hasSelection); // ✨ 使用 hasSelection
+    }
+    if (ui->deleteProductButton) { // ✨ 增加空指针检查
+        ui->deleteProductButton->setEnabled(hasSelection); // ✨ 使用 hasSelection
+    }
+}
+
+void MainWindow::on_clearProductFilterButton_clicked()
+{
+    ui->productSearchLineEdit->clear(); // 清除搜索框
+    ui->productCategoryFilterComboBox->setCurrentIndex(0); // 重置类别筛选框到“所有类别”
+    applyProductFilters(); // 应用清除后的筛选条件
+    updateProductActionButtons(); // 更新按钮状态
+    qDebug() << "产品筛选已清除，所有产品将重新显示。";
+    statusBar()->showMessage(tr("产品筛选已清除，所有产品将重新显示。"), 3000); // 更新状态栏消息
+}
+

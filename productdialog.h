@@ -4,6 +4,8 @@
 #include <QDialog>
 #include "product.h"
 class DatabaseManager; // 声明如果需要
+struct Category;       // 如果在函数签名或成员中使用
+struct Supplier;       // 如果在函数签名或成员中使用
 
 namespace Ui {
 class ProductDialog;
@@ -19,7 +21,9 @@ public: // ✨ 确保 setProduct 在 public 区域
 
     Product getProduct() const;
     void setProduct(const Product& product); // 声明在这里
-    void loadCategoriesAndSuppliers(DatabaseManager* dbManager); // (来自阶段 4.3)
+    void extracted(QList<Supplier> &suppliers);
+    void
+    loadCategoriesAndSuppliers(DatabaseManager *dbManager); // (来自阶段 4.3)
 
 private:
     Ui::ProductDialog *ui;
