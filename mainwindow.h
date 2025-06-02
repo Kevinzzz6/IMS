@@ -22,11 +22,17 @@ private slots:
     void on_addProductButton_clicked();
     // 稍后添加编辑/删除按钮的槽
 
+    void on_editProductButton_clicked();
+
+    void on_deleteProductButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     DatabaseManager *m_dbManager;   // 指向数据库管理器的指针
     QSqlTableModel *m_productModel; // 产品表视图的模型
+    QSqlTableModel *m_categoryModel; // 类别表视图的模型
 
     void setupProductView(); // 初始化表视图和模型的辅助函数
+    void setupCategoryView();
 };
 #endif // MAINWINDOW_H

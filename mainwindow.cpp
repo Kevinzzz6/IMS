@@ -2,9 +2,12 @@
 #include "ui_mainwindow.h" // 注意：通常是 ui_mainwindow.h，检查您的文件名
 #include "databasemanager.h"
 #include "productdialog.h"
+#include "product.h"       // 用于 Product 结构体
+#include "categorydialog.h" // 用于 CategoryDialog
 #include <QMessageBox>
 #include <QSqlError>      // 用于 m_productModel->lastError()
 #include <QHeaderView>    // 用于自定义表头外观
+#include <QSqlRecord>   // 用于访问模型记录
 
 // 确保 m_dbManager 是 MainWindow 的成员并已初始化
 // void MainWindow::setDatabaseManager(DatabaseManager *dbManager) {
@@ -15,74 +18,6 @@
 //     }
 // }
 
-void MainWindow::on_addProductButton_clicked() {
-    if (!m_dbManager) {
-        QMessageBox::critical(this, "错误", "数据库管理器未初始化。");
-        return;
-    }
-
-    ProductDialog dialog(this); // 创建对话框，'this' (MainWindow) 是其父对象
-        // 父子关系有助于模态和内存管理。
-
-    // TODO 在阶段 4.3：在 ProductDialog 中填充 categoryComboBox 和 supplierComboBox
-    // dialog.loadCategoriesAndSuppliers(m_dbManager);
-
-    // 以模态方式执行对话框。exec() 返回 QDialog::Accepted 或 QDialog::Rejected。
-    if (dialog.exec() == QDialog::Accepted) {
-        // 用户点击了“确定”
-        Product product = dialog.getProduct(); // 从对话框检索数据
-
-        // 基本验证示例（可以在 ProductDialog 本身中进行更广泛的验证）
-        if (product.name.isEmpty() || product.sellingPrice <= 0) {
-            QMessageBox::warning(this, "输入错误", "产品名称不能为空且销售价格必须为正数。");
-            return;
-        }
-
-        if (m_dbManager->addProduct(product)) { // product.id 将由 addProduct 更新
-            QMessageBox::information(this, "成功", "产品添加成功，ID 为：" + QString::number(product.id));
-            // TODO：刷新产品列表视图（例如，m_productModel->select();）
-            if (m_productModel) { // 检查模型是否存在
-                m_productModel->select(); // 刷新 QSqlTableModel
-            }
-        } else {
-            QMessageBox::warning(this, "数据库错误", "无法将产品添加到数据库。");
-        }
-    } else {
-        // 用户点击了“取消”或关闭了对话框
-        qDebug() << "添加产品对话框已取消。";
-    }
-}
-
-    ProductDialog dialog(this); // 创建对话框，'this' (MainWindow) 是其父对象
-        // 父子关系有助于模态和内存管理。
-
-    // TODO 在阶段 4.3：在 ProductDialog 中填充 categoryComboBox 和 supplierComboBox
-    // dialog.loadCategoriesAndSuppliers(m_dbManager);
-
-    // 以模态方式执行对话框。exec() 返回 QDialog::Accepted 或 QDialog::Rejected。
-    if (dialog.exec() == QDialog::Accepted) {
-        // 用户点击了“确定”
-        Product product = dialog.getProduct(); // 从对话框检索数据
-
-        // 基本验证示例（可以在 ProductDialog 本身中进行更广泛的验证）
-        if (product.name.isEmpty() || product.sellingPrice <= 0) {
-            QMessageBox::warning(this, "输入错误", "产品名称不能为空且销售价格必须为正数。");
-            return;
-        }
-
-        if (m_dbManager->addProduct(product)) { // product.id 将由 addProduct 更新
-            QMessageBox::information(this, "成功", "产品添加成功，ID 为：" + QString::number(product.id));
-            // TODO：刷新产品列表视图（例如，m_productModel->select();）
-            if (m_productModel) { // 检查模型是否存在
-                m_productModel->select(); // 刷新 QSqlTableModel
-            }
-        } else {
-            QMessageBox::warning(this, "数据库错误", "无法将产品添加到数据库。");
-        }
-    } else {
-        // 用户点击了“取消”或关闭了对话框
-        qDebug() << "添加产品对话框已取消。";
-    }
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -106,6 +41,7 @@ void MainWindow::setDatabaseManager(DatabaseManager *dbManager) {
     // 一旦数据库管理器可用，就设置依赖于它的视图
     if (m_dbManager && m_dbManager->getDatabase().isOpen()) {
         setupProductView();
+        setupCategoryView();
     } else {
         QMessageBox::critical(this, "数据库错误", "MainWindow 的数据库管理器未正确初始化。");
     }
@@ -176,8 +112,283 @@ void MainWindow::setupProductView() {
 //     }
 // }
 
+void MainWindow::setupCategoryView() {
+    if (!m_dbManager) {
+        qDebug() << "setupCategoryView：DatabaseManager 未设置。";
+        return;
+    }
+
+    // 创建 QSqlTableModel 实例
+    m_categoryModel = new QSqlTableModel(this, m_dbManager->getDatabase());
+    m_categoryModel->setTable("Categories");
+    m_categoryModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+
+    // 设置表头数据
+    m_categoryModel->setHeaderData(m_categoryModel->fieldIndex("name"), Qt::Horizontal, tr("类别名称"));
+
+    // 填充模型
+    if (!m_categoryModel->select()) {
+        qDebug() << "加载类别模型时出错：" << m_categoryModel->lastError().text();
+        QMessageBox::critical(this, "模型错误",
+                              "无法从数据库加载类别：" + m_categoryModel->lastError().text());
+        return;
+    }
+
+    // 设置 QTableView 模型
+    ui->categoriesTableView->setModel(m_categoryModel);
+    ui->categoriesTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->categoriesTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->categoriesTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->categoriesTableView->horizontalHeader()->setStretchLastSection(true);
+    ui->categoriesTableView->resizeColumnsToContents();
+
+    // 隐藏不需要的列（例如 ID）
+    ui->categoriesTableView->hideColumn(m_categoryModel->fieldIndex("id"));
+
+    qDebug() << "类别视图设置完成。模型有" << m_categoryModel->rowCount() << "行。";
+}
+
 void MainWindow::on_actionExit_triggered()
 {
     QApplication::quit();
+}
+
+void MainWindow::on_addProductButton_clicked() {
+    if (!m_dbManager) {
+        QMessageBox::critical(this, "错误", "数据库管理器未初始化。");
+        return;
+    }
+
+    ProductDialog dialog(this); // 创建对话框，'this' (MainWindow) 是其父对象
+        // 父子关系有助于模态和内存管理。
+
+    // TODO 在阶段 4.3：在 ProductDialog 中填充 categoryComboBox 和 supplierComboBox
+    // dialog.loadCategoriesAndSuppliers(m_dbManager);
+
+    // 以模态方式执行对话框。exec() 返回 QDialog::Accepted 或 QDialog::Rejected。
+    if (dialog.exec() == QDialog::Accepted) {
+        // 用户点击了“确定”
+        Product product = dialog.getProduct(); // 从对话框检索数据
+
+        // 基本验证示例（可以在 ProductDialog 本身中进行更广泛的验证）
+        if (product.name.isEmpty() || product.sellingPrice <= 0) {
+            QMessageBox::warning(this, "输入错误", "产品名称不能为空且销售价格必须为正数。");
+            return;
+        }
+
+        if (m_dbManager->addProduct(product)) { // product.id 将由 addProduct 更新
+            QMessageBox::information(this, "成功", "产品添加成功，ID 为：" + QString::number(product.id));
+            // TODO：刷新产品列表视图（例如，m_productModel->select();）
+            if (m_productModel) { // 检查模型是否存在
+                m_productModel->select(); // 刷新 QSqlTableModel
+            }
+        } else {
+            QMessageBox::warning(this, "数据库错误", "无法将产品添加到数据库。");
+        }
+    } else {
+        // 用户点击了“取消”或关闭了对话框
+        qDebug() << "添加产品对话框已取消。";
+    }
+}
+
+void MainWindow::on_editProductButton_clicked() {
+    if (!m_dbManager || !m_productModel) { // 注意：这里应该是 m_productModel 或 m_productRelationalModel
+        QMessageBox::critical(this, "错误", "系统未正确初始化。");
+        return;
+    }
+
+    // 从 QTableView 获取当前选择
+    QModelIndex currentIndex = ui->productsTableView->currentIndex();
+    if (!currentIndex.isValid()) {
+        QMessageBox::information(this, "需要选择", "请选择要编辑的产品。");
+        return;
+    }
+
+    // 从模型中的选定行检索产品 ID。
+    // 'id' 列已隐藏，但其数据仍在模型中。
+    int productId = m_productModel->record(currentIndex.row()).value("id").toInt(); // 或 m_productRelationalModel
+    if (productId <= 0) {
+        QMessageBox::critical(this, "错误", "选择了无效的产品 ID。");
+        return;
+    }
+
+    // 使用 DatabaseManager 从数据库获取完整的产品详细信息
+    Product productToEdit = m_dbManager->getProductById(productId);
+    if (productToEdit.id == -1) { // 假设如果未找到，getProductById 返回 id 为 -1 的产品
+        QMessageBox::warning(this, "错误", "无法检索要编辑的产品详细信息。");
+        return;
+    }
+
+    ProductDialog dialog(this);
+    // TODO 在阶段 4.3：dialog.loadCategoriesAndSuppliers(m_dbManager);
+    dialog.setProduct(productToEdit); // 使用现有产品数据预填充对话框
+
+    if (dialog.exec() == QDialog::Accepted) {
+        Product updatedProduct = dialog.getProduct();
+        updatedProduct.id = productId; // 确保为更新维护 ID
+
+        if (updatedProduct.name.isEmpty() || updatedProduct.sellingPrice <= 0) {
+            QMessageBox::warning(this, "输入错误", "产品名称不能为空且销售价格必须为正数。");
+            return;
+        }
+
+        if (m_dbManager->updateProduct(updatedProduct)) {
+            QMessageBox::information(this, "成功", "产品更新成功。");
+            m_productModel->select(); // 或 m_productRelationalModel->select(); 刷新表视图
+        } else {
+            QMessageBox::warning(this, "数据库错误", "无法更新产品。");
+        }
+    }
+}
+
+
+void MainWindow::on_deleteProductButton_clicked() {
+    if (!m_dbManager || !m_productModel) { // 注意：这里应该是 m_productModel 或 m_productRelationalModel
+        QMessageBox::critical(this, "错误", "系统未正确初始化。");
+        return;
+    }
+
+    QModelIndex currentIndex = ui->productsTableView->currentIndex();
+    if (!currentIndex.isValid()) {
+        QMessageBox::information(this, "需要选择", "请选择要删除的产品。");
+        return;
+    }
+
+    int productId = m_productModel->record(currentIndex.row()).value("id").toInt(); // 或 m_productRelationalModel
+    if (productId <= 0) {
+        QMessageBox::critical(this, "错误", "选择了无效的产品 ID 进行删除。");
+        return;
+    }
+
+    // 向用户确认删除
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "确认删除",
+                                  QString("您确定要删除产品 ID %1 吗？").arg(productId),
+                                  QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        if (m_dbManager->deleteProduct(productId)) {
+            QMessageBox::information(this, "成功", "产品删除成功。");
+            m_productModel->select(); // 或 m_productRelationalModel->select(); 刷新表视图
+        } else {
+            QMessageBox::warning(this, "数据库错误", "无法删除产品。");
+        }
+    }
+}
+
+
+void MainWindow::on_addCategoryButton_clicked()
+{
+    if (!m_dbManager) {
+        QMessageBox::critical(this, "错误", "数据库管理器未初始化。");
+        return;
+    }
+
+    CategoryDialog dialog(this); // 创建类别对话框
+    dialog.setWindowTitle("添加类别"); // 设置对话框标题
+    if (dialog.exec() == QDialog::Accepted) { // 以模态方式执行对话框
+        Category newCategory = dialog.getCategory(); // 获取用户输入的类别数据
+
+        if (newCategory.name.isEmpty()) {
+            QMessageBox::warning(this, "输入错误", "类别名称不能为空。");
+            return;
+        }
+
+        if (m_dbManager->addCategory(newCategory)) { // 添加类别到数据库
+            QMessageBox::information(this, "成功", "类别添加成功，ID 为：" + QString::number(newCategory.id));
+            m_categoryModel->select(); // 刷新类别列表视图
+        } else {
+            QMessageBox::warning(this, "数据库错误", "无法添加类别到数据库。");
+        }
+    } else {
+        qDebug() << "添加类别对话框已取消。";
+    }
+}
+
+
+
+
+void MainWindow::on_editCategoryButton_clicked()
+{
+    if (!m_dbManager || !m_categoryModel) {
+        QMessageBox::critical(this, "错误", "系统未正确初始化。");
+        return;
+    }
+
+    QModelIndex currentIndex = ui->categoriesTableView->currentIndex();
+    if (!currentIndex.isValid()) {
+        QMessageBox::information(this, "需要选择", "请选择要编辑的类别。");
+        return;
+    }
+
+    int categoryId = m_categoryModel->record(currentIndex.row()).value("id").toInt();
+    if (categoryId <= 0) {
+        QMessageBox::critical(this, "错误", "选择了无效的类别 ID。");
+        return;
+    }
+
+    // 使用 DatabaseManager 从数据库获取完整的类别详细信息
+    Category categoryToEdit = m_dbManager->getCategoryById(categoryId);
+    if (categoryToEdit.id == -1) { // 假设如果未找到，getCategoryById 返回 id 为 -1 的类别
+        QMessageBox::warning(this, "错误", "无法检索要编辑的类别详细信息。");
+        return;
+    }
+
+    CategoryDialog dialog(this);
+    dialog.setWindowTitle("编辑类别"); // 设置对话框标题
+    dialog.setCategory(categoryToEdit); // 使用现有类别数据预填充对话框
+
+    if (dialog.exec() == QDialog::Accepted) {
+        Category updatedCategory = dialog.getCategory();
+        updatedCategory.id = categoryId; // 确保为更新维护 ID
+
+        if (updatedCategory.name.isEmpty()) {
+            QMessageBox::warning(this, "输入错误", "类别名称不能为空。");
+            return;
+        }
+
+        if (m_dbManager->updateCategory(updatedCategory)) {
+            QMessageBox::information(this, "成功", "类别更新成功。");
+            m_categoryModel->select(); // 刷新类别列表视图
+        } else {
+            QMessageBox::warning(this, "数据库错误", "无法更新类别。");
+        }
+    }
+}
+
+
+void MainWindow::on_deleteCategoryButton_clicked()
+{
+    if (!m_dbManager || !m_categoryModel) {
+        QMessageBox::critical(this, "错误", "系统未正确初始化。");
+        return;
+    }
+
+    QModelIndex currentIndex = ui->categoriesTableView->currentIndex();
+    if (!currentIndex.isValid()) {
+        QMessageBox::information(this, "需要选择", "请选择要删除的类别。");
+        return;
+    }
+
+    int categoryId = m_categoryModel->record(currentIndex.row()).value("id").toInt();
+    if (categoryId <= 0) {
+        QMessageBox::critical(this, "错误", "选择了无效的类别 ID 进行删除。");
+        return;
+    }
+
+    // 向用户确认删除
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "确认删除",
+                                  QString("您确定要删除类别 ID %1 吗？").arg(categoryId),
+                                  QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        if (m_dbManager->deleteCategory(categoryId)) {
+            QMessageBox::information(this, "成功", "类别删除成功。");
+            m_categoryModel->select(); // 刷新类别列表视图
+        } else {
+            QMessageBox::warning(this, "数据库错误", "无法删除类别。");
+        }
+    }
 }
 

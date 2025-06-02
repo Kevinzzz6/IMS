@@ -7,7 +7,7 @@
 #include <QDir>             // 用于创建目录
 
 int main(int argc, char *argv) {
-    QApplication app(argc, argv);
+    QApplication app(argc, &argv);
 
     // --- 数据库设置 ---
     // 在应用程序的可写数据位置构建路径
@@ -47,4 +47,3 @@ int main(int argc, char *argv) {
     // dbManager.closeDatabase(); // DatabaseManager 析构函数将处理关闭
     return result;
 }
-```MainWindow` 类将需要一个方法（例如，`setDatabaseManager(DatabaseManager *dbManager)`）和一个成员变量来存储指向 `DatabaseManager` 实例的指针，从而允许 UI 元素通过此管理器与数据库交互。

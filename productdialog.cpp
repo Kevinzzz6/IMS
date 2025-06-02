@@ -6,7 +6,8 @@
 
 ProductDialog::ProductDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::ProductDialog)
+    ui(new Ui::ProductDialog),
+    m_editingProductId(-1) // 初始化为“添加”模式
 {
     ui->setupUi(this);
     setWindowTitle("添加/编辑产品");
@@ -20,10 +21,28 @@ ProductDialog::~ProductDialog() {
     delete ui;
 }
 
+void ProductDialog::setProduct(const Product& product) {
+    m_editingProductId = product.id; // 存储 ID
+    ui->productNameLineEdit->setText(product.name);
+    ui->descriptionTextEdit->setText(product.description);
+    ui->purchasePriceSpinBox->setValue(product.purchasePrice);
+    ui->sellingPriceSpinBox->setValue(product.sellingPrice);
+    ui->stockQuantitySpinBox->setValue(product.stockQuantity);
+
+    // TODO 在阶段 4.3：在 categoryComboBox 和 supplierComboBox 中选择正确的项目
+    // int catIndex = ui->categoryComboBox->findData(product.categoryId);
+    // if (catIndex!= -1) ui->categoryComboBox->setCurrentIndex(catIndex);
+    // int supIndex = ui->supplierComboBox->findData(product.supplierId);
+    // if (supIndex!= -1) ui->supplierComboBox->setCurrentIndex(supIndex);
+
+    setWindowTitle("编辑产品 - ID：" + QString::number(product.id));
+}
+
+
 Product ProductDialog::getProduct() const {
     Product product;
     // product.id = m_currentProduct.id; // 对于编辑很重要，对于添加则是新的
-
+    product.id = m_editingProductId; // 为更新操作设置 ID
     product.name = ui->productNameLineEdit->text().trimmed();
     product.description = ui->descriptionTextEdit->text().trimmed();
 
