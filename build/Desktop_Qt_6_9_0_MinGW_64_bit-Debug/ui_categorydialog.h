@@ -14,47 +14,49 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QDialogButtonBox>
-#include <QtWidgets/QFormLayout>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
-#include <QtWidgets/QWidget>
 
 QT_BEGIN_NAMESPACE
 
 class Ui_CategoryDialog
 {
 public:
-    QDialogButtonBox *buttonBox;
-    QWidget *formLayoutWidget;
-    QFormLayout *formLayout;
+    QGridLayout *gridLayout_2;
+    QGridLayout *gridLayout;
     QLabel *label;
     QLineEdit *categoryNameLineEdit;
+    QDialogButtonBox *buttonBox;
 
     void setupUi(QDialog *CategoryDialog)
     {
         if (CategoryDialog->objectName().isEmpty())
             CategoryDialog->setObjectName("CategoryDialog");
         CategoryDialog->resize(581, 446);
-        buttonBox = new QDialogButtonBox(CategoryDialog);
-        buttonBox->setObjectName("buttonBox");
-        buttonBox->setGeometry(QRect(170, 350, 341, 32));
-        buttonBox->setOrientation(Qt::Orientation::Horizontal);
-        buttonBox->setStandardButtons(QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok);
-        formLayoutWidget = new QWidget(CategoryDialog);
-        formLayoutWidget->setObjectName("formLayoutWidget");
-        formLayoutWidget->setGeometry(QRect(50, 60, 441, 241));
-        formLayout = new QFormLayout(formLayoutWidget);
-        formLayout->setObjectName("formLayout");
-        formLayout->setContentsMargins(0, 0, 0, 0);
-        label = new QLabel(formLayoutWidget);
+        gridLayout_2 = new QGridLayout(CategoryDialog);
+        gridLayout_2->setObjectName("gridLayout_2");
+        gridLayout = new QGridLayout();
+        gridLayout->setObjectName("gridLayout");
+        label = new QLabel(CategoryDialog);
         label->setObjectName("label");
 
-        formLayout->setWidget(0, QFormLayout::ItemRole::LabelRole, label);
+        gridLayout->addWidget(label, 0, 0, 1, 1);
 
-        categoryNameLineEdit = new QLineEdit(formLayoutWidget);
+        categoryNameLineEdit = new QLineEdit(CategoryDialog);
         categoryNameLineEdit->setObjectName("categoryNameLineEdit");
 
-        formLayout->setWidget(0, QFormLayout::ItemRole::FieldRole, categoryNameLineEdit);
+        gridLayout->addWidget(categoryNameLineEdit, 0, 1, 1, 1);
+
+
+        gridLayout_2->addLayout(gridLayout, 0, 0, 1, 1);
+
+        buttonBox = new QDialogButtonBox(CategoryDialog);
+        buttonBox->setObjectName("buttonBox");
+        buttonBox->setOrientation(Qt::Orientation::Horizontal);
+        buttonBox->setStandardButtons(QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok);
+
+        gridLayout_2->addWidget(buttonBox, 1, 0, 1, 1);
 
 
         retranslateUi(CategoryDialog);

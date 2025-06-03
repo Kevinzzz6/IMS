@@ -89,6 +89,7 @@ public:
 
         purchasePriceSpinBox = new QDoubleSpinBox(formLayoutWidget);
         purchasePriceSpinBox->setObjectName("purchasePriceSpinBox");
+        purchasePriceSpinBox->setMaximum(9999.989999999999782);
 
         formLayout->setWidget(2, QFormLayout::ItemRole::FieldRole, purchasePriceSpinBox);
 
@@ -99,6 +100,7 @@ public:
 
         sellingPriceSpinBox = new QDoubleSpinBox(formLayoutWidget);
         sellingPriceSpinBox->setObjectName("sellingPriceSpinBox");
+        sellingPriceSpinBox->setMaximum(9999.989999999999782);
 
         formLayout->setWidget(3, QFormLayout::ItemRole::FieldRole, sellingPriceSpinBox);
 
@@ -123,11 +125,17 @@ public:
         formLayout->setWidget(6, QFormLayout::ItemRole::LabelRole, label_7);
 
         supplierComboBox = new QComboBox(formLayoutWidget);
+        supplierComboBox->addItem(QString());
+        supplierComboBox->addItem(QString());
+        supplierComboBox->addItem(QString());
         supplierComboBox->setObjectName("supplierComboBox");
 
         formLayout->setWidget(6, QFormLayout::ItemRole::FieldRole, supplierComboBox);
 
         categoryComboBox = new QComboBox(formLayoutWidget);
+        categoryComboBox->addItem(QString());
+        categoryComboBox->addItem(QString());
+        categoryComboBox->addItem(QString());
         categoryComboBox->setObjectName("categoryComboBox");
 
         formLayout->setWidget(5, QFormLayout::ItemRole::FieldRole, categoryComboBox);
@@ -151,6 +159,14 @@ public:
         label_5->setText(QCoreApplication::translate("ProductDialog", "\345\272\223\345\255\230\346\225\260\351\207\217\357\274\232", nullptr));
         label_6->setText(QCoreApplication::translate("ProductDialog", "\347\261\273\345\210\253\357\274\232", nullptr));
         label_7->setText(QCoreApplication::translate("ProductDialog", "\344\276\233\345\272\224\345\225\206\357\274\232", nullptr));
+        supplierComboBox->setItemText(0, QCoreApplication::translate("ProductDialog", "aaa", nullptr));
+        supplierComboBox->setItemText(1, QCoreApplication::translate("ProductDialog", "bbb", nullptr));
+        supplierComboBox->setItemText(2, QCoreApplication::translate("ProductDialog", "ccc", nullptr));
+
+        categoryComboBox->setItemText(0, QCoreApplication::translate("ProductDialog", "a", nullptr));
+        categoryComboBox->setItemText(1, QCoreApplication::translate("ProductDialog", "b", nullptr));
+        categoryComboBox->setItemText(2, QCoreApplication::translate("ProductDialog", "c", nullptr));
+
     } // retranslateUi
 
 };
